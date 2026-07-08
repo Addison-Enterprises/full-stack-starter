@@ -1,0 +1,24 @@
+{
+  "name": "full-stack-starter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack Turborepo monorepo — Hono backend + TanStack Start frontend",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "format": "turbo format",
+    "format:check": "turbo format:check",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "ci": "turbo lint format:check typecheck test",
+    "setup": "git submodule update --init --recursive && pnpm install"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.6"
+  },
+  "packageManager": "pnpm@11.5.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

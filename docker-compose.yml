@@ -1,0 +1,78 @@
+services:
+  # ── Shared infrastructure ──
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: hono_starter
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    restart: unless-stopped
+
+  # ── Backend (hono-starter) ──
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./apps/backend/src:/app/src
+      - ./apps/backend/tsconfig.json:/app/tsconfig.json
+      - ./apps/backend/package.json:/app/package.json
+      - ./apps/backend/pnpm-lock.yaml:/app/pnpm-lock.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    command: pnpm dev
+
+  # ── Frontend (tanstack-starter) ──
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      target: build
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    environment:
+      VITE_API_URL: http://backend:3000
+      VITE_BETTER_AUTH_URL: http://backend:3000
+      VITE_AUTH_ENABLED: "true"
+    volumes:
+      - ./apps/frontend/app:/app/app
+      - ./apps/frontend/tsconfig.json:/app/tsconfig.json
+      - ./apps/frontend/vite.config.ts:/app/vite.config.ts
+      - ./apps/frontend/package.json:/app/package.json
+      - ./apps/frontend/pnpm-lock.yaml:/app/pnpm-lock.yaml
+    depends_on:
+      - backend
+    command: pnpm dev --host 0.0.0.0 --port 5173
+
+volumes:
+  pgdata:
+  miniodata:
