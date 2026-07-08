@@ -63,6 +63,18 @@ git add apps/backend apps/frontend
 git commit -m "chore: bump hono-starter and tanstack-starter"
 ```
 
+### CI setup (required)
+
+`hono-starter` is private, so CI needs a PAT to clone it. Create a fine-grained PAT with **Contents: Read** access across `Addison-Enterprises` repos, then:
+
+```bash
+gh secret set GH_PAT --repo Addison-Enterprises/full-stack-starter --body "github_pat_..."
+```
+
+Then uncomment the `token:` line in `.github/workflows/ci.yml`.
+
+Without this, CI will fail at the submodule checkout step.
+
 ## Architecture
 
 - **Backend**: Hono + Kysely + better-auth + PostgreSQL + MinIO
